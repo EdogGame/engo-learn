@@ -48,12 +48,13 @@ func (cb *CityBuildingSystem) Update(dt float32) {
 		texture, err := common.LoadedSprite("textures/city.png")
 		if err != nil {
 			log.Println("Unable to load texture: " + err.Error())
+			panic(err)
 		}
 
 		// 渲染组件绘制内容与大小
 		city.RenderComponent = common.RenderComponent{
 			Drawable: texture,
-			Scale:    engo.Point{0.1, 0.1},
+			Scale:    engo.Point{0.5, 0.5},
 		}
 
 		// 向世界中添加实体
@@ -78,6 +79,9 @@ func (cb *CityBuildingSystem) New(w *ecs.World) {
 	cb.mouseTracker.MouseComponent = common.MouseComponent{
 		Track: true,
 	}
+
+	// 注册按键
+	engo.Input.RegisterButton("AddCity", engo.KeyF1)
 
 	for _, system := range w.Systems() {
 		switch sys := system.(type) {
