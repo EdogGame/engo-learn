@@ -1,11 +1,18 @@
 package main
 
 import (
-	. "engo-learn/systems"
+	"engo-learn/systems"
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
 	"image/color"
+)
+
+const (
+	KeyBoardScrollSpeed = 400
+	EdgeScrollSpeed     = 400
+	EdgeScrollMargin    = 20
+	MouseZoomSpeed      = -0.125
 )
 
 // 一个场景
@@ -38,8 +45,17 @@ func (*myScene) Setup(u engo.Updater) {
 	// 添加监控鼠标系统
 	world.AddSystem(&common.MouseSystem{})
 
+	kbs := common.NewKeyboardScroller(
+		KeyBoardScrollSpeed,
+		engo.DefaultHorizontalAxis,
+		engo.DefaultVerticalAxis)
+	world.AddSystem(kbs)
+
+	world.AddSystem(&common.EdgeScroller{EdgeScrollSpeed, EdgeScrollMargin})
+	world.AddSystem(&common.MouseZoomer{MouseZoomSpeed})
+
 	// 添加自定义的城市系统
-	world.AddSystem(&CityBuildingSystem{})
+	world.AddSystem(&systems.CityBuildingSystem{})
 
 	// 设置场景背景颜色为白色
 	common.SetBackground(color.White)
@@ -47,11 +63,12 @@ func (*myScene) Setup(u engo.Updater) {
 
 func main() {
 	opts := engo.RunOptions{
-		Title:      "hello engo-learn", // 设置窗口标题
-		Width:      400,                // 设置窗口宽度
-		Height:     400,                // 设置窗口高度
-		Fullscreen: false,              // 开启全屏
-		AssetsRoot: "resources",        // 设置资源目录
+		Title:          "hello engo-learn", // 设置窗口标题
+		Width:          400,                // 设置窗口宽度
+		Height:         400,                // 设置窗口高度
+		Fullscreen:     false,              // 开启全屏
+		AssetsRoot:     "resources",        // 设置资源目录
+		StandardInputs: true,               // 是否开启标准输入
 	}
 
 	// 运行引擎
