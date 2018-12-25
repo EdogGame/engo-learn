@@ -1,18 +1,12 @@
 package main
 
 import (
+	. "engo-learn/systems"
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
 	"image/color"
-	"log"
 )
-
-type City struct {
-	ecs.BasicEntity
-	common.RenderComponent
-	common.SpaceComponent
-}
 
 // 一个场景
 type myScene struct {
@@ -33,37 +27,19 @@ func (*myScene) Preload() {
 
 // setup函数内添加实体与系统设置
 func (*myScene) Setup(u engo.Updater) {
+	// 注册按键
+	engo.Input.RegisterButton("AddCity", engo.KeyF1)
+
 	world, _ := u.(*ecs.World)
+
+	// 添加渲染系统
 	world.AddSystem(&common.RenderSystem{})
 
-	// 实例一个基础实体
-	city := City{BasicEntity: ecs.NewBasic()}
-	// 空间组件设置位置与大小
-	city.SpaceComponent = common.SpaceComponent{
-		Position: engo.Point{10, 10},
-		Width:    303,
-		Height:   641,
-	}
+	// 添加监控鼠标系统
+	world.AddSystem(&common.MouseSystem{})
 
-	// 加载一个雪碧
-	texture, err := common.LoadedSprite("textures/city.png")
-	if err != nil {
-		log.Println("Unable to load texture: " + err.Error())
-	}
-
-	// 渲染组件绘制内容与大小
-	city.RenderComponent = common.RenderComponent{
-		Drawable: texture,
-		Scale:    engo.Point{1, 1},
-	}
-
-	// 向世界中添加实体
-	for _, system := range world.Systems() {
-		switch sys := system.(type) {
-		case *common.RenderSystem:
-			sys.Add(&city.BasicEntity, &city.RenderComponent, &city.SpaceComponent)
-		}
-	}
+	// 添加自定义的城市系统
+	world.AddSystem(&CityBuildingSystem{})
 
 	// 设置场景背景颜色为白色
 	common.SetBackground(color.White)
