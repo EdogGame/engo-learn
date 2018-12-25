@@ -7,6 +7,7 @@ import (
 	"engo.io/engo/common"
 	"image"
 	"image/color"
+	"log"
 )
 
 const (
@@ -15,6 +16,12 @@ const (
 	EdgeScrollMargin    = 20
 	MouseZoomSpeed      = -0.125
 )
+
+type Tile struct {
+	ecs.BasicEntity
+	common.RenderComponent
+	common.SpaceComponent
+}
 
 type HUD struct {
 	ecs.BasicEntity
@@ -36,7 +43,9 @@ func (*myScene) Preload() {
 	// engo.Files.SetRoot("resources")
 
 	// 加载一个资源文件
-	engo.Files.Load("textures/city.png")
+	engo.Files.Load(
+		"textures/city.png",
+		"tilemap/TrafficMap.tmx")
 }
 
 // setup函数内添加实体与系统设置
@@ -95,6 +104,50 @@ func (*myScene) Setup(u engo.Updater) {
 				&hud.SpaceComponent)
 		}
 	}
+
+	// 打开并解析tmx文件
+	resource, err := engo.Files.Resource("tilemap/TrafficMap.tmx")
+	if err != nil {
+		log.Println(".tmx file loading error, " + err.Error())
+		panic(err)
+	}
+	tmxResource := resource.(common.TMXResource)
+	levelData := tmxResource.Level
+
+	// 读取地图块
+	tiles := make([]*Tile, 0)
+	for _, tileLayer := range levelData.TileLayers {
+		for _, tileElement := range tileLayer.Tiles {
+			if tileElement.Image != nil {
+				tile := &Tile{BasicEntity: ecs.NewBasic()}
+				tile.RenderComponent = common.RenderComponent{
+					Drawable: tileElement,
+					Scale:    engo.Point{1, 1},
+				}
+				tile.SpaceComponent = common.SpaceComponent{
+					Position: tileElement.Point,
+					Width:    0,
+					Height:   0,
+				}
+				tiles = append(tiles, tile)
+			}
+		}
+	}
+
+	// 开始铺地图了
+	for _, system := range world.Systems() {
+		switch sys := system.(type) {
+		case *common.RenderSystem:
+			for _, v := range tiles {
+				sys.Add(
+					&v.BasicEntity,
+					&v.RenderComponent,
+					&v.SpaceComponent)
+			}
+		}
+	}
+
+	common.CameraBounds = levelData.Bounds()
 
 	// 设置场景背景颜色为白色
 	common.SetBackground(color.White)
