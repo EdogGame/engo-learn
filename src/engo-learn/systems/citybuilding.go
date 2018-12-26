@@ -1,11 +1,11 @@
 package systems
 
 import (
+	. "engo-learn/constant"
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
 )
@@ -70,15 +70,18 @@ type City struct {
 	common.RenderComponent
 	common.SpaceComponent
 }
-type CityBuildingSystem struct {
-	world        *ecs.World
-	mouseTracker MouseTracker
-	usedTiles    []int
-}
 
-type MouseTracker struct {
+type CityMouseTracker struct {
 	ecs.BasicEntity
 	common.MouseComponent
+}
+
+type CityBuildingSystem struct {
+	world              *ecs.World
+	mouseTracker       CityMouseTracker
+	usedTiles          []int
+	elapsed, buildTime float32
+	built              int
 }
 
 // 从场景内删除实体时触发
@@ -88,44 +91,52 @@ func (*CityBuildingSystem) Remove(ecs.BasicEntity) {
 
 // 每帧刷新
 func (cb *CityBuildingSystem) Update(dt float32) {
-	if engo.Input.Button("AddCity").JustPressed() {
-		fmt.Println("一位路过的二五仔按下了F1")
-
-		// 实例一个基础实体
-		city := City{BasicEntity: ecs.NewBasic()}
-		// 空间组件设置位置与大小, 位置使用鼠标所在坐标
-		city.SpaceComponent = common.SpaceComponent{
-			Position: engo.Point{
-				cb.mouseTracker.MouseX,
-				cb.mouseTracker.MouseY},
-			Width:  30,
-			Height: 64,
-		}
-
-		// 加载一个雪碧
-		texture, err := common.LoadedSprite("textures/city.png")
-		if err != nil {
-			log.Println("Unable to load texture: " + err.Error())
-			panic(err)
-		}
-
-		// 渲染组件绘制内容与大小
-		city.RenderComponent = common.RenderComponent{
-			Drawable: texture,
-			Scale:    engo.Point{0.5, 0.5},
-		}
-
-		// 向世界中添加实体
-		for _, system := range cb.world.Systems() {
-			switch sys := system.(type) {
-			case *common.RenderSystem:
-				sys.Add(
-					&city.BasicEntity,
-					&city.RenderComponent,
-					&city.SpaceComponent)
-			}
-		}
+	cb.elapsed += dt
+	if cb.elapsed >= cb.buildTime {
+		cb.generateCity()
+		cb.elapsed = 0
+		cb.updateBuildTime()
+		cb.built++
 	}
+
+	//if engo.Input.Button("AddCity").JustPressed() {
+	//	fmt.Println("一位路过的二五仔按下了F1")
+	//
+	//	// 实例一个基础实体
+	//	city := City{BasicEntity: ecs.NewBasic()}
+	//	// 空间组件设置位置与大小, 位置使用鼠标所在坐标
+	//	city.SpaceComponent = common.SpaceComponent{
+	//		Position: engo.Point{
+	//			cb.mouseTracker.MouseX,
+	//			cb.mouseTracker.MouseY},
+	//		Width:  30,
+	//		Height: 64,
+	//	}
+	//
+	//	// 加载一个雪碧
+	//	texture, err := common.LoadedSprite("textures/city.png")
+	//	if err != nil {
+	//		log.Println("Unable to load texture: " + err.Error())
+	//		panic(err)
+	//	}
+	//
+	//	// 渲染组件绘制内容与大小
+	//	city.RenderComponent = common.RenderComponent{
+	//		Drawable: texture,
+	//		Scale:    engo.Point{0.5, 0.5},
+	//	}
+	//
+	//	// 向世界中添加实体
+	//	for _, system := range cb.world.Systems() {
+	//		switch sys := system.(type) {
+	//		case *common.RenderSystem:
+	//			sys.Add(
+	//				&city.BasicEntity,
+	//				&city.RenderComponent,
+	//				&city.SpaceComponent)
+	//		}
+	//	}
+	//}
 }
 
 // 初始化一个系统
@@ -152,8 +163,15 @@ func (cb *CityBuildingSystem) New(w *ecs.World) {
 		}
 	}
 
-	Spritesheet = common.NewSpritesheetWithBorderFromFile("textures/citySheet.png", 16, 16, 1, 1)
+	Spritesheet = common.NewSpritesheetWithBorderFromFile(
+		Sprite,
+		16,
+		16,
+		1,
+		1)
 	rand.Seed(time.Now().UnixNano())
+
+	//cb.updateBuildTime()
 }
 
 func (cb *CityBuildingSystem) generateCity() {
@@ -187,5 +205,44 @@ func (cb *CityBuildingSystem) generateCity() {
 			tile.RenderComponent.SetZIndex(1)
 			cityTiles = append(cityTiles, tile)
 		}
+	}
+
+	for _, system := range cb.world.Systems() {
+		switch sys := system.(type) {
+		case *common.RenderSystem:
+			for _, v := range cityTiles {
+				sys.Add(
+					&v.BasicEntity,
+					&v.RenderComponent,
+					&v.SpaceComponent)
+			}
+		}
+	}
+}
+
+func (cb *CityBuildingSystem) isTileUsed(tile int) bool {
+	for _, t := range cb.usedTiles {
+		if tile == t {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (cb *CityBuildingSystem) updateBuildTime() {
+	switch {
+	case cb.built < 2:
+		cb.buildTime = 5*rand.Float32() + 10
+	case cb.built < 5:
+		cb.buildTime = 30*rand.Float32() + 60
+	case cb.built < 10:
+		cb.buildTime = 60*rand.Float32() + 30
+	case cb.built < 20:
+		cb.buildTime = 35*rand.Float32() + 30
+	case cb.built < 25:
+		cb.buildTime = 30*rand.Float32() + 30
+	default:
+		cb.buildTime = 20*rand.Float32() + 20
 	}
 }

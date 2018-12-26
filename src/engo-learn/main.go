@@ -1,20 +1,13 @@
 package main
 
 import (
+	. "engo-learn/constant"
 	"engo-learn/systems"
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
 	"image"
 	"image/color"
-	"log"
-)
-
-const (
-	KeyBoardScrollSpeed = 400
-	EdgeScrollSpeed     = 400
-	EdgeScrollMargin    = 20
-	MouseZoomSpeed      = -0.125
 )
 
 type Tile struct {
@@ -44,8 +37,8 @@ func (*myScene) Preload() {
 
 	// 加载一个资源文件
 	engo.Files.Load(
-		"textures/city.png",
-		"tilemap/TrafficMap.tmx")
+		Sprite,
+		TrafficMap)
 }
 
 // setup函数内添加实体与系统设置
@@ -93,7 +86,7 @@ func (*myScene) Setup(u engo.Updater) {
 	}
 	// 添加着色器
 	hud.RenderComponent.SetShader(common.HUDShader)
-	hud.RenderComponent.SetZIndex(1)
+	hud.RenderComponent.SetZIndex(1000)
 
 	for _, system := range world.Systems() {
 		switch sys := system.(type) {
@@ -106,9 +99,9 @@ func (*myScene) Setup(u engo.Updater) {
 	}
 
 	// 打开并解析tmx文件
-	resource, err := engo.Files.Resource("tilemap/TrafficMap.tmx")
+	resource, err := engo.Files.Resource(TrafficMap)
 	if err != nil {
-		log.Println(".tmx file loading error, " + err.Error())
+		//log.Println(".tmx file loading error, " + err.Error())
 		panic(err)
 	}
 	tmxResource := resource.(common.TMXResource)
@@ -155,12 +148,12 @@ func (*myScene) Setup(u engo.Updater) {
 
 func main() {
 	opts := engo.RunOptions{
-		Title:          "hello engo-learn", // 设置窗口标题
-		Width:          800,                // 设置窗口宽度
-		Height:         800,                // 设置窗口高度
-		Fullscreen:     false,              // 开启全屏
-		AssetsRoot:     "resources",        // 设置资源目录
-		StandardInputs: true,               // 是否开启标准输入
+		Title:          Title,          // 设置窗口标题
+		Width:          Width,          // 设置窗口宽度
+		Height:         Heigth,         // 设置窗口高度
+		Fullscreen:     Fullscreen,     // 开启全屏
+		AssetsRoot:     AssetsRoot,     // 设置资源目录
+		StandardInputs: StandardInputs, // 是否开启标准输入
 	}
 
 	// 运行引擎
