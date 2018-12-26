@@ -4,7 +4,7 @@ const (
 	Title          = "hello engo-learn"
 	Width          = 800
 	Heigth         = 800
-	AssetsRoot     = "resources"
+	AssetsRoot     = "resources" //"D:\\Workspace\\golang\\engo-learn\\bin\\resources"
 	Fullscreen     = false
 	StandardInputs = true
 

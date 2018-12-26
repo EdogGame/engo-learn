@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	. "engo-learn/constant"
 	"engo-learn/systems"
 	"engo.io/ecs"
 	"engo.io/engo"
 	"engo.io/engo/common"
+	"golang.org/x/image/font/gofont/gosmallcaps"
 	"image"
 	"image/color"
 )
@@ -39,6 +41,9 @@ func (*myScene) Preload() {
 	engo.Files.Load(
 		Sprite,
 		TrafficMap)
+	engo.Files.LoadReaderData(
+		"go.ttf",
+		bytes.NewReader(gosmallcaps.TTF))
 }
 
 // setup函数内添加实体与系统设置
@@ -62,13 +67,15 @@ func (*myScene) Setup(u engo.Updater) {
 
 	// 添加自定义的城市系统
 	world.AddSystem(&systems.CityBuildingSystem{})
+	world.AddSystem(&systems.HUDTextSystem{})
+	world.AddSystem(&systems.MoneySystem{})
 
 	// 实例一个基础信息框
 	hud := HUD{BasicEntity: ecs.NewBasic()}
 	hud.SpaceComponent = common.SpaceComponent{
 		Position: engo.Point{
-			0,
-			engo.WindowHeight() - 200,
+			X: 0,
+			Y: engo.WindowHeight() - 200,
 		},
 		Width:  200,
 		Height: 200,
@@ -80,9 +87,9 @@ func (*myScene) Setup(u engo.Updater) {
 	hudTexture := common.NewTextureSingle(hudImageObj)
 
 	hud.RenderComponent = common.RenderComponent{
+		Repeat:   common.Repeat,
 		Drawable: hudTexture,
 		Scale:    engo.Point{1, 1},
-		Repeat:   common.Repeat,
 	}
 	// 添加着色器
 	hud.RenderComponent.SetShader(common.HUDShader)

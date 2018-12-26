@@ -78,7 +78,6 @@ type CityMouseTracker struct {
 
 type CityBuildingSystem struct {
 	world              *ecs.World
-	mouseTracker       CityMouseTracker
 	usedTiles          []int
 	elapsed, buildTime float32
 	built              int
@@ -87,6 +86,41 @@ type CityBuildingSystem struct {
 // 从场景内删除实体时触发
 func (*CityBuildingSystem) Remove(ecs.BasicEntity) {
 
+}
+
+// 初始化一个系统
+func (cb *CityBuildingSystem) New(w *ecs.World) {
+	cb.world = w
+	fmt.Println("实例CityBuildingSystem加入场景中")
+
+	//cb.mouseTracker.BasicEntity = ecs.NewBasic()
+	//cb.mouseTracker.MouseComponent = common.MouseComponent{
+	//	Track: true,
+	//}
+
+	// 注册按键
+	//engo.Input.RegisterButton("AddCity", engo.KeyF1)
+
+	//for _, system := range w.Systems() {
+	//	switch sys := system.(type) {
+	//	case *common.MouseSystem:
+	//		sys.Add(
+	//			&cb.mouseTracker.BasicEntity,
+	//			&cb.mouseTracker.MouseComponent,
+	//			nil,
+	//			nil)
+	//	}
+	//}
+
+	Spritesheet = common.NewSpritesheetWithBorderFromFile(
+		Sprite,
+		16,
+		16,
+		1,
+		1)
+	rand.Seed(time.Now().UnixNano())
+
+	cb.updateBuildTime()
 }
 
 // 每帧刷新
@@ -139,41 +173,6 @@ func (cb *CityBuildingSystem) Update(dt float32) {
 	//}
 }
 
-// 初始化一个系统
-func (cb *CityBuildingSystem) New(w *ecs.World) {
-	cb.world = w
-	fmt.Println("实例CityBuildingSystem加入场景中")
-
-	cb.mouseTracker.BasicEntity = ecs.NewBasic()
-	cb.mouseTracker.MouseComponent = common.MouseComponent{
-		Track: true,
-	}
-
-	// 注册按键
-	//engo.Input.RegisterButton("AddCity", engo.KeyF1)
-
-	for _, system := range w.Systems() {
-		switch sys := system.(type) {
-		case *common.MouseSystem:
-			sys.Add(
-				&cb.mouseTracker.BasicEntity,
-				&cb.mouseTracker.MouseComponent,
-				nil,
-				nil)
-		}
-	}
-
-	Spritesheet = common.NewSpritesheetWithBorderFromFile(
-		Sprite,
-		16,
-		16,
-		1,
-		1)
-	rand.Seed(time.Now().UnixNano())
-
-	//cb.updateBuildTime()
-}
-
 func (cb *CityBuildingSystem) generateCity() {
 	x := rand.Intn(18)
 	y := rand.Intn(18)
@@ -218,6 +217,27 @@ func (cb *CityBuildingSystem) generateCity() {
 			}
 		}
 	}
+
+	engo.Mailbox.Dispatch(HUDTextMessage{
+		BasicEntity: ecs.NewBasic(),
+		SpaceComponent: common.SpaceComponent{
+			Position: engo.Point{
+				X: float32((x + 1) * 64),
+				Y: float32((y + 1) * 64),
+			},
+			Width:  64,
+			Height: 64,
+		},
+		MouseComponent: common.MouseComponent{},
+		Line1:          "Town",
+		Line2:          "Just built!",
+		Line3:          "A town generates",
+		Line4:          "$100 per day.",
+	})
+
+	engo.Mailbox.Dispatch(CityUpdateMessage{
+		New: CityTypeNew,
+	})
 }
 
 func (cb *CityBuildingSystem) isTileUsed(tile int) bool {
